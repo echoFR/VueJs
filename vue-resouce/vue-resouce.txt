@@ -1,0 +1,58 @@
+交互:
+	$http	（ajax）
+	如果vue想做交互vue-resouce或者axios，官方现在建议axios
+
+	get:
+		1.  获取一个普通文本数据:
+		this.$http.get('aa.txt').then(function(res){
+		    alert(res.data);
+		},function(res){
+		    alert(res.status);
+		});
+
+		2.  给服务发送数据:√
+		this.$http.get('get.php',{
+		    a:1,
+		    b:2
+		}).then(function(res){
+		    alert(res.data);
+		},function(res){
+		    alert(res.status);
+		});
+	post:
+		this.$http.post('post.php',{
+		    a:1,
+		    b:20
+		},{
+		    emulateJSON:true
+		}).then(function(res){
+		    alert(res.data);
+		},function(res){
+		    alert(res.status);
+		});
+	jsonp:
+		https://sug.so.360.cn/suggest?callback=suggest_so&word=a
+
+		https://sp0.baidu.com/5a1Fazu8AA54nxGko9WTAnF6hhy/su?wd=a&cb=jshow
+
+		this.$http.jsonp('https://sp0.baidu.com/5a1Fazu8AA54nxGko9WTAnF6hhy/su',{
+		    wd:'a'
+		},{
+		    jsonp:'cb'	//callback名字，默认名字就是"callback"
+		}).then(function(res){
+		    alert(res.data.s);
+		},function(res){
+		    alert(res.status);
+		});
+		
+        百度接口搜索 ttps://www.baidu.com/s?wd=s
+
+方法：
+	1. this.$http.get()/post()/jsonp()
+
+	2. this.$http({
+		url:地址
+		data:给后台提交数据,
+		method:'get'/post/jsonp
+		jsonp:'cb' //cbName
+	});

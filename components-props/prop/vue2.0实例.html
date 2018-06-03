@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <style>
+
+    </style>
+    <script src="vue.js"></script>
+    <script>
+        var Home={
+            template:'#aaa'
+        };  
+        Vue.component('my-aaa',Home);
+        window.onload=function(){
+            new Vue({
+                el:'#box',
+                components:{
+                    'bbb':{
+                        template:`<div>
+                            <div>我是b组件</div><p>bb</p>
+                            </div>`
+                    }
+                }
+            });
+        };
+    </script>
+</head>
+<body>
+    <template id="aaa">  
+        <!-- 要有一个div  root-->
+        <div>
+            <h3>我是a组件</h3>
+            <h3>我是aa组件</h3>            
+        </div>
+    </template>
+    <div id="box">
+        <my-aaa></my-aaa>
+        <bbb></bbb>
+    </div>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

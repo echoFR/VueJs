@@ -1,0 +1,210 @@
+axios
+https://www.kancloud.cn/yunye/axios/234845 中文文档
+
+cnpm install axios -S
+
+安装其他插件的时候，可以直接在 main.js 中引入并 Vue.use()，但是 axios 并不能 use，只能每个需要发送请求的组件中即时引入
+为了解决这个问题，有两种开发思路，
+一是在引入 axios 之后，修改原型链，
+二是结合 Vuex，封装一个 aciton
+
+方案一：改写原型链
+首先在 main.js 中引入 axios
+import axios from 'axios'
+这时候如果在其它的组件中，是无法使用 axios 命令的。但如果将 axios 改写为 Vue 的原型属性，就能解决这个问题
+Vue.prototype.$ajax = axios
+在 main.js 中添加了这两行代码之后，就能直接在组件的 methods 中使用 $ajax 命令
+
+
+methods: {
+  submitForm () {
+    this.$ajax({
+      method: 'post',
+      url: '/user',
+      data: {
+        name: 'wise',
+        info: 'wrong'
+      }
+   })
+}
+
+方案二：在 Vuex 中封装
+Vuex 的 mutations类似于事件，用于提交 Vuex 中的状态 state
+action 和 mutations 也很类似，主要的区别在于，action 可以包含异步操作，而且可以通过 action 来提交 mutations
+另外还有一个重要的区别：
+mutations 有一个固有参数 state，接收的是 Vuex 中的 state 对象
+action 也有一个固有参数 context，但是 context 是 state 的父级，包含  state、getters
+
+ 
+Vuex 的仓库是 store.js，将 axios 引入，并在 action 添加新的方法
+// store.js
+import Vue from 'Vue'
+import Vuex from 'vuex'
+
+// 引入 axios
+import axios from 'axios'
+
+Vue.use(Vuex)
+const store = new Vuex.Store({
+  // 定义状态
+  state: {
+    test01: {
+      name: 'Wise Wrong'
+    },
+    test02: {
+      tell: '12312345678'
+    }
+  },
+  actions: {
+    // 封装一个 ajax 方法
+    saveForm (context) {
+      axios({
+        method: 'post',
+        url: '/user',
+        data: context.state.test02
+      })
+    }
+  }
+})
+export default store
+    
+
+注意：即使已经在 main.js 中引入了 axios，并改写了原型链，也无法在 store.js 中直接使用 $ajax 命令
+换言之，这两种方案是相互独立的
+
+ 
+
+在组件中发送请求的时候，需要使用 this.$store.dispatch 来分发
+
+methods: {
+  submitForm () {
+    this.$store.dispatch('saveForm')
+  }
+}
+submitForm 是绑定在组件上的一个方法，将触发 saveForm，从而通过 axios 向服务器发送请求
+
+
+
+axios的拦截器
+//添加请求拦截器
+axios.interceptors.request.use(config => {
+  //在发送请求之前做某事，比如说 设置loading动画显示
+  return config
+}, error => {
+  //请求错误时做些事
+  return Promise.reject(error)
+})
+//添加响应拦截器
+axios.interceptors.response.use(response => {
+  //对响应数据做些事，比如说把loading动画关掉
+  return response
+}, error => {
+  //请求错误时做些事
+  return Promise.reject(error)
+})
+
+axios的配置：
+
+axiosConfig.js
+import Vue from 'vue'
+import axios from 'axios'
+import qs from 'qs'
+import { Message, Loading } from 'element-ui'
+// 响应时间
+axios.defaults.timeout = 5 * 1000
+// 配置cookie
+// axios.defaults.withCredentials = true
+// 配置请求头
+axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
+// 静态资源
+Vue.prototype.$static = ''
+
+// 配置接口地址
+axios.defaults.baseURL = ''
+var loadingInstance
+// POST传参序列化(添加请求拦截器)
+axios.interceptors.request.use(
+  config => {
+    loadingInstance = Loading.service({
+      lock: true,
+      text: '数据加载中，请稍后...',
+      spinner: 'el-icon-loading',
+      background: 'rgba(0, 0, 0, 0.7)'
+    })
+    if (config.method === 'post') {
+      config.data = qs.stringify(config.data)
+    }
+    return config
+  },
+  err => {
+    loadingInstance.close()
+    Message.error('请求错误')
+    return Promise.reject(err)
+  }
+)
+// 返回状态判断(添加响应拦截器)
+axios.interceptors.response.use(
+  res => {
+    if (res.data.code === 200) {
+      loadingInstance.close()
+      return res
+    } else {
+      loadingInstance.close()
+      Message.error(res.data.msg)
+    }
+  },
+  err => {
+    loadingInstance.close()
+    Message.error('请求失败，请稍后再试')
+    return Promise.reject(err)
+  }
+)
+// 发送请求
+export function fetchPost (url, params) {
+  return new Promise((resolve, reject) => {
+    axios
+      .post(url, params)
+      .then(
+        res => {
+          resolve(res.data)
+        },
+        err => {
+          reject(err.data)
+        }
+      )
+      .catch(err => {
+        reject(err.data)
+      })
+  })
+}
+export function fetchGet (url, params) {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(url, {
+        params: params
+      })
+      .then(res => {
+        resolve(res.data)
+      })
+      .catch(err => {
+        reject(err.data)
+      })
+  })
+}
+
+main.js
+import { fetchGet, fetchPost} from './api/axiosConfig'
+Vue.prototype.$get = fetchGet
+Vue.prototype.$post = fetchPost
+
+
+组件内部的调用
+getData () {
+  let params = {
+    userId: this.userId
+  }
+  this.$get('/xxx', params).then(res => {
+    this.listsData = res.data
+  }).catch(() => {
+  })
+}
